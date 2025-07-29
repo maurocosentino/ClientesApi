@@ -23,7 +23,7 @@ ScaffoldingReadMe.txt
 Migrations/
 
 # Sensitive info
-appsettings.*.json
+appsettings.json
 
 # Others
 *.db
