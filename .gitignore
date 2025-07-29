@@ -1,0 +1,40 @@
+# Build
+bin/
+obj/
+out/
+
+# User-specific files
+.vscode/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# EF Core Migrations metadata
+Migrations/
+
+# Sensitive info
+appsettings.*.json
+
+# Others
+*.db
+*.sqlite
+*.swp
+*.DS_Store
+*.idea/
+
+# GitHub Actions
+.github/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
