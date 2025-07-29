@@ -20,10 +20,11 @@ public class ClienteUpdateDto
     [MaxLength(50)]
     public string Email { get; set; } = "";
 
-     [Required]
+    [Required]
+    [Phone]
     public string Telefono { get; set; } = "";
     
-     [Required]
-    [MaxLength(30)]
+    [Required]
+    [MaxLength(100)]
     public string Direccion { get; set; } = "";
 }
