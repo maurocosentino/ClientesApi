@@ -5,11 +5,11 @@ namespace ClienteApi.Dtos;
 
 public class ClienteCreateDto
 {
-    [Required]
+    [Required(ErrorMessage = "El nombre es obligatorio")]
     [MaxLength(30)]
     public string Nombre { get; set; } = "";
 
-    [Required]
+    [Required(ErrorMessage = "El apellido es obligatorio")]
     [MaxLength(30)]
     public string Apellido { get; set; } = "";
     

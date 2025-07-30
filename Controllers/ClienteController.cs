@@ -21,6 +21,8 @@ namespace ClienteApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ClienteDto>>> GetClientes()
         {
+            var argentinaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
+
             var clientes = await _context.Clientes
             .Select(c => new ClienteDto
             {
@@ -30,7 +32,7 @@ namespace ClienteApi.Controllers
                 Email = c.Email,
                 Telefono = c.Telefono,
                 Direccion = c.Direccion,
-                FechaRegistro = c.FechaRegistro
+                FechaRegistro = TimeZoneInfo.ConvertTimeFromUtc(c.FechaRegistro, argentinaTimeZone)
 
             }).ToListAsync();
 
@@ -42,20 +44,9 @@ namespace ClienteApi.Controllers
         {
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null)
-                return NotFound("No se encontró un cliente con ese ID.");
+                return NotFound(new { message =  "No se encontró un cliente con ese ID."});
 
-            var clienteDto = new ClienteDto
-            {
-                Id = cliente.Id,
-                Nombre = cliente.Nombre,
-                Apellido = cliente.Apellido,
-                Email = cliente.Email,
-                Telefono = cliente.Telefono,
-                Direccion = cliente.Direccion,
-                FechaRegistro = cliente.FechaRegistro
-            };
-
-            return Ok(clienteDto);
+            return Ok(MapToDto(cliente));
         }
 
         [HttpPost]
@@ -80,29 +71,18 @@ namespace ClienteApi.Controllers
 
             await _context.SaveChangesAsync();
 
-            var clienteDto = new ClienteDto
-            {
-                Id = cliente.Id,
-                Nombre = cliente.Nombre,
-                Apellido = cliente.Apellido,
-                Email = cliente.Email,
-                Telefono = cliente.Telefono,
-                Direccion = cliente.Direccion
-            };
-
-
-            return CreatedAtAction(nameof(GetCliente), new { id = cliente.Id }, clienteDto);
+            return CreatedAtAction(nameof(GetCliente), new { id = cliente.Id }, MapToDto(cliente));
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCliente(int id, [FromBody] ClienteUpdateDto dto)
         {
             if (id != dto.Id)
-                return BadRequest("El ID de la URL no coincide con el del cuerpo.");
+                return BadRequest( new { message = "El ID de la URL no coincide con el del cuerpo."});
 
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null)
-                return NotFound("No se encontró un cliente con ese ID.");
+                return NotFound(new { message =  "No se encontró un cliente con ese ID."});
 
 
             cliente.Nombre = dto.Nombre;
@@ -122,14 +102,24 @@ namespace ClienteApi.Controllers
         {
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null)
-                return NotFound("No se encontró un cliente con ese ID.");
+                return NotFound(new { message =  "No se encontró un cliente con ese ID."});
 
             _context.Clientes.Remove(cliente);
 
             await _context.SaveChangesAsync();
 
-            return NoContent();    
+            return NoContent();
         }
 
+
+        private static ClienteDto MapToDto(Cliente cliente) => new()
+        {
+            Id = cliente.Id,
+            Nombre = cliente.Nombre,
+            Apellido = cliente.Apellido,
+            Email = cliente.Email,
+            Telefono = cliente.Telefono,
+            Direccion = cliente.Direccion
+        };
     }
 }
