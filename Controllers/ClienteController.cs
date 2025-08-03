@@ -1,6 +1,7 @@
 using ClienteApi.Data;
 using ClienteApi.Dtos;
 using ClienteApi.Models;
+using ClienteApi.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -50,11 +51,23 @@ namespace ClienteApi.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ClienteCreateDto>> CreatedCliente([FromBody] ClienteCreateDto dto)
+        public async Task<ActionResult<ClienteCreateDto>> CreateCliente([FromBody] ClienteCreateDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // Normalizar y limpiar todos los campos ANTES de cualquier lógica
+            dto.Nombre = dto.Nombre.Clean();
+            dto.Apellido = dto.Apellido.Clean();
+            dto.Email = dto.Email.Clean().ToLower();  // Normalizar email
+            dto.Telefono = dto.Telefono.Clean();
+            dto.Direccion = dto.Direccion.Clean();
+
+            // Verificar unicidad del email (siempre necesario en creación)
+            if (await _context.Clientes.AnyAsync(c => c.Email == dto.Email))
+                return Conflict(new { message = "Ya existe un cliente con ese email." });
+
+            // Crear entidad con datos ya normalizados
             var cliente = new Cliente
             {
                 Nombre = dto.Nombre,
@@ -63,12 +76,8 @@ namespace ClienteApi.Controllers
                 Telefono = dto.Telefono,
                 Direccion = dto.Direccion
             };
-            if (await _context.Clientes.AnyAsync(c => c.Email == dto.Email))
-                return Conflict("Ya existe un cliente con ese email.");
-
 
             _context.Clientes.Add(cliente);
-
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetCliente), new { id = cliente.Id }, MapToDto(cliente));
@@ -77,25 +86,40 @@ namespace ClienteApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCliente(int id, [FromBody] ClienteUpdateDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            
             if (id != dto.Id)
-                return BadRequest( new { message = "El ID de la URL no coincide con el del cuerpo."});
+                return BadRequest(new { message = "El ID de la URL no coincide con el del cuerpo." });
 
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null)
-                return NotFound(new { message =  "No se encontró un cliente con ese ID."});
-
-
-            cliente.Nombre = dto.Nombre;
-            cliente.Apellido = dto.Apellido;
-            cliente.Email = dto.Email;
-            cliente.Telefono = dto.Telefono;
-            cliente.Direccion = dto.Direccion;
-
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-
+                return NotFound(new { message = "No se encontró un cliente con ese ID." });
+            
+            // Guardar valores originales para comparación
+            var originalEmail = cliente.Email;
+            
+            // Actualizar propiedades
+            cliente.Nombre = dto.Nombre.Clean();
+            cliente.Apellido = dto.Apellido.Clean();
+            cliente.Telefono = dto.Telefono.Clean();
+            cliente.Direccion = dto.Direccion.Clean();
+            
+            // Manejo especial para email
+            var newEmail = dto.Email.Clean().ToLower();
+            if (originalEmail != newEmail)
+            {
+                if (await _context.Clientes.AnyAsync(c => c.Email == newEmail))
+                    return Conflict(new { message = "Ya existe un cliente con ese email." });
+                
+                cliente.Email = newEmail;
+            }
+            
+                await _context.SaveChangesAsync();
+                
+                return Ok(MapToDto(cliente));
         }
+        
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCliente(int id)
